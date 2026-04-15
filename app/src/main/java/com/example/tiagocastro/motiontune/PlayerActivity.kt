@@ -8,18 +8,12 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import android.os.*
 import android.view.View
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.view.animation.ScaleAnimation
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -27,7 +21,6 @@ import androidx.media3.exoplayer.ExoPlayer
 
 class PlayerActivity : AppCompatActivity(), SensorEventListener {
 
-    // Lógica do Player
     private lateinit var sensorManager: SensorManager
     private var rotationSensor: Sensor? = null
     private var accelSensor: Sensor? = null
@@ -35,29 +28,17 @@ class PlayerActivity : AppCompatActivity(), SensorEventListener {
     private var isReadyToChange = true
     private var playlist: ArrayList<Music> = arrayListOf()
 
-    // Elementos da UI
     private lateinit var btnPlay: ImageButton
     private lateinit var seekBar: SeekBar
-    private lateinit var musicTitle: TextView
-    private lateinit var albumArt: ImageView
-    private lateinit var albumCard: androidx.cardview.widget.CardView
-
-    // Para atualizar o SeekBar
     private val handler = Handler(Looper.getMainLooper())
-    private lateinit var updateSeekBar: Runnable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
 
-        // Inicializar Views
         btnPlay = findViewById(R.id.btnPlay)
         seekBar = findViewById(R.id.seekBar)
-        musicTitle = findViewById(R.id.musicTitle)
-        albumArt = findViewById(R.id.albumArt)
-        albumCard = findViewById(R.id.albumCard)
 
-        // Receber a lista via Serializable
         val rawList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("LIST", ArrayList::class.java)
         } else {
@@ -68,12 +49,9 @@ class PlayerActivity : AppCompatActivity(), SensorEventListener {
         playlist = rawList?.filterIsInstance<Music>() as? ArrayList<Music> ?: arrayListOf()
         val index = intent.getIntExtra("INDEX", 0)
 
-        // Configurar o SeekBar para o utilizador poder arrastar
-        setupSeekBarListener()
-
-        // Iniciar Player e Sensores
         setupPlayer(index)
         setupButtons()
+        setupSeekBarListener()
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
@@ -82,181 +60,103 @@ class PlayerActivity : AppCompatActivity(), SensorEventListener {
 
     private fun setupPlayer(index: Int) {
         player = ExoPlayer.Builder(this).build()
-
-        // Adicionar músicas à playlist
-        playlist.forEach { music ->
-            player?.addMediaItem(MediaItem.fromUri(Uri.parse(music.uriString)))
-        }
-
+        playlist.forEach { player?.addMediaItem(MediaItem.fromUri(Uri.parse(it.uriString))) }
         player?.prepare()
         player?.seekTo(index, 0L)
         player?.play()
 
-        // Listener para mudanças de música e estado (Play/Pause)
         player?.addListener(object : Player.Listener {
-            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                updateUI() // Atualiza título e capa
-            }
-
-            // Ponto 2: Detetar quando o player muda entre Play e Pause
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) { updateUI() }
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                // Atualizar o ícone do botão
-                if (isPlaying) {
-                    btnPlay.setImageResource(android.R.drawable.ic_media_pause)
-                    startSeekBarUpdate() // Começar a mover a barra
-                } else {
-                    btnPlay.setImageResource(android.R.drawable.ic_media_play)
-                    stopSeekBarUpdate() // Parar a barra
-                }
+                btnPlay.setImageResource(if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play)
+                if (isPlaying) startSeekBarUpdate() else stopSeekBarUpdate()
             }
         })
-        updateUI() // Atualização inicial
+        updateUI()
     }
 
-    // Ponto 3: Lógica para mover a Barra de Progresso (SeekBar)
-    private fun startSeekBarUpdate() {
-        seekBar.max = player?.duration?.toInt() ?: 0
-        updateSeekBar = Runnable {
-            val currentPos = player?.currentPosition?.toInt() ?: 0
-            seekBar.progress = currentPos
-            handler.postDelayed(updateSeekBar, 1000) // Atualizar a cada segundo
-        }
-        handler.post(updateSeekBar)
-    }
-
-    private fun stopSeekBarUpdate() {
-        handler.removeCallbacks(updateSeekBar)
-    }
-
-    // Ponto 3.1: Permitir que o utilizador arraste a barra
     private fun setupSeekBarListener() {
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    player?.seekTo(progress.toLong()) // Mudar a música para onde o user arrastou
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                if (fromUser) player?.seekTo(p.toLong())
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) { stopSeekBarUpdate() }
+            override fun onStopTrackingTouch(s: SeekBar?) { startSeekBarUpdate() }
+        })
+    }
+
+    private fun startSeekBarUpdate() {
+        handler.post(object : Runnable {
+            override fun run() {
+                player?.let {
+                    seekBar.max = it.duration.toInt()
+                    seekBar.progress = it.currentPosition.toInt()
                 }
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {
-                stopSeekBarUpdate() // Parar a atualização automática enquanto arrasta
-            }
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                startSeekBarUpdate() // Recomeçar a atualização
+                handler.postDelayed(this, 1000)
             }
         })
     }
 
-    // Ponto 1: Animação de Clique nos Botões (Diminuir tamanho)
-    private fun animateButtonClick(view: View) {
-        // Criar animação de escala (0.9x do tamanho original)
-        val anim = ScaleAnimation(
-            1f, 0.9f, 1f, 0.9f,
-            Animation.RELATIVE_TO_SELF, 0.5f,
-            Animation.RELATIVE_TO_SELF, 0.5f
-        )
-        anim.duration = 200 // Duração da animação
-        anim.repeatCount = 1 // Ir e Voltar
-        anim.repeatMode = Animation.REVERSE // Modo de reverso (voltar ao tamanho normal)
-        view.startAnimation(anim)
-    }
-
-    private fun setupButtons() {
-        findViewById<ImageButton>(R.id.btnPrev).setOnClickListener {
-            animateButtonClick(it) // Adicionar animação
-            changeTrack(false)
-        }
-
-        btnPlay.setOnClickListener {
-            animateButtonClick(it) // Adicionar animação
-            if (player?.isPlaying == true) {
-                player?.pause()
-            } else {
-                player?.play()
-            }
-            // O ícone muda automaticamente no Listener (onIsPlayingChanged)
-        }
-
-        findViewById<ImageButton>(R.id.btnNext).setOnClickListener {
-            animateButtonClick(it) // Adicionar animação
-            changeTrack(true)
-        }
-    }
+    private fun stopSeekBarUpdate() { handler.removeCallbacksAndMessages(null) }
 
     private fun updateUI() {
         val currentIdx = player?.currentMediaItemIndex ?: 0
         if (currentIdx < playlist.size) {
             val music = playlist[currentIdx]
-            musicTitle.text = music.title
+            findViewById<TextView>(R.id.musicTitle).text = music.title
             loadAlbumArt(music.uriString)
         }
     }
 
-    private fun loadAlbumArt(uriString: String) {
-        val albumArtImageView = findViewById<ImageView>(R.id.albumArt) // Referência correta
+    private fun loadAlbumArt(uri: String) {
+        val img = findViewById<ImageView>(R.id.albumArt)
         try {
             val retriever = MediaMetadataRetriever()
-            retriever.setDataSource(this, Uri.parse(uriString))
+            retriever.setDataSource(this, Uri.parse(uri))
             val art = retriever.embeddedPicture
-
-            if (art != null) {
-                val bitmap = BitmapFactory.decodeByteArray(art, 0, art.size)
-                albumArtImageView.setImageBitmap(bitmap)
-            } else {
-                // Usa o ícone padrão de galeria aqui também
-                albumArtImageView.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
+            if (art != null) img.setImageBitmap(BitmapFactory.decodeByteArray(art, 0, art.size))
+            else img.setImageResource(android.R.drawable.ic_menu_gallery)
             retriever.release()
-        } catch (e: Exception) {
-            albumArtImageView.setImageResource(android.R.drawable.ic_menu_gallery)
-        }
+        } catch (e: Exception) { img.setImageResource(android.R.drawable.ic_menu_gallery) }
     }
 
-    // Animação de Feedback Visual para Gesto de Sensor (Slide)
-    private fun triggerFeedbackAnimation(animType: String) {
-        val animation = when (animType) {
-            "NEXT" -> AnimationUtils.loadAnimation(this, android.R.anim.slide_in_left)
-            "PREV" -> AnimationUtils.loadAnimation(this, android.R.anim.slide_out_right)
-            "SHAKE" -> AnimationUtils.loadAnimation(this, R.anim.shake_anim)
-            else -> null
-        }
-        animation?.let { albumCard.startAnimation(it) }
+    private fun animateClick(v: View) {
+        val anim = ScaleAnimation(1f, 0.85f, 1f, 0.85f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f)
+        anim.duration = 150
+        anim.repeatCount = 1
+        anim.repeatMode = Animation.REVERSE
+        v.startAnimation(anim)
+    }
+
+    private fun setupButtons() {
+        btnPlay.setOnClickListener { animateClick(it); if (player?.isPlaying == true) player?.pause() else player?.play() }
+        findViewById<ImageButton>(R.id.btnNext).setOnClickListener { animateClick(it); changeTrack(true) }
+        findViewById<ImageButton>(R.id.btnPrev).setOnClickListener { animateClick(it); changeTrack(false) }
     }
 
     private fun changeTrack(next: Boolean) {
         isReadyToChange = false
-        if (next && player?.hasNextMediaItem() == true) {
-            player?.seekToNext()
-            triggerFeedbackAnimation("NEXT")
-        } else if (!next && player?.hasPreviousMediaItem() == true) {
-            player?.seekToPrevious()
-            triggerFeedbackAnimation("PREV")
-        }
+        if (next && player?.hasNextMediaItem() == true) player?.seekToNext()
+        else if (!next && player?.hasPreviousMediaItem() == true) player?.seekToPrevious()
+
+        val anim = if (next) android.R.anim.slide_in_left else android.R.anim.slide_out_right
+        findViewById<View>(R.id.albumCard).startAnimation(AnimationUtils.loadAnimation(this, anim))
     }
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
-            val rotationMatrix = FloatArray(9)
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-            val orientation = FloatArray(3)
-            SensorManager.getOrientation(rotationMatrix, orientation)
-            val rollDegrees = Math.toDegrees(orientation[2].toDouble()).toFloat()
-
+            val matrix = FloatArray(9); SensorManager.getRotationMatrixFromVector(matrix, event.values)
+            val orient = FloatArray(3); SensorManager.getOrientation(matrix, orient)
+            val roll = Math.toDegrees(orient[2].toDouble()).toFloat()
             if (isReadyToChange) {
-                if (rollDegrees > 45f) changeTrack(true)
-                else if (rollDegrees < -45f) changeTrack(false)
-            } else if (Math.abs(rollDegrees) < 10f) {
-                isReadyToChange = true
-            }
+                if (roll > 45f) changeTrack(true) else if (roll < -45f) changeTrack(false)
+            } else if (Math.abs(roll) < 10f) isReadyToChange = true
         }
-
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            val x = event.values[0]; val y = event.values[1]; val z = event.values[2]
-            val acceleration = Math.sqrt((x*x + y*y + z*z).toDouble()) - SensorManager.GRAVITY_EARTH
-
-            // Sensor Shake brusco (valor 18) para evitar conflito
-            if (acceleration > 18) {
-                val randomIdx = (0 until (player?.mediaItemCount ?: 1)).random()
-                player?.seekToDefaultPosition(randomIdx)
-                triggerFeedbackAnimation("SHAKE")
+            val acc = Math.sqrt((event.values[0]*event.values[0] + event.values[1]*event.values[1] + event.values[2]*event.values[2]).toDouble()) - SensorManager.GRAVITY_EARTH
+            if (acc > 18) {
+                player?.seekToDefaultPosition((0 until (player?.mediaItemCount ?: 1)).random())
+                findViewById<View>(R.id.albumCard).startAnimation(AnimationUtils.loadAnimation(this, R.anim.shake_anim))
             }
         }
     }
@@ -265,24 +165,9 @@ class PlayerActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         rotationSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
         accelSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
-
-        // Retomar a barra se já estiver a tocar
-        if (player?.isPlaying == true) {
-            startSeekBarUpdate()
-        }
     }
 
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(this)
-        stopSeekBarUpdate() // Parar a barra ao sair
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        player?.release()
-        stopSeekBarUpdate()
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    override fun onPause() { super.onPause(); sensorManager.unregisterListener(this); stopSeekBarUpdate() }
+    override fun onDestroy() { super.onDestroy(); player?.release() }
+    override fun onAccuracyChanged(s: Sensor?, a: Int) {}
 }
