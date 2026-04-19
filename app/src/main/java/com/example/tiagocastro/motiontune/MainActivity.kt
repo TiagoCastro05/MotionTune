@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.View
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -32,11 +32,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupTopButtons() {
+        // Botão Shuffle
         findViewById<View>(R.id.btnShuffleAll).setOnClickListener {
             if (musicList.isNotEmpty()) startPlayer(musicList.indices.random())
         }
+
+        // Botão Play All
         findViewById<View>(R.id.btnPlayAll).setOnClickListener {
             if (musicList.isNotEmpty()) startPlayer(0)
+        }
+
+        // Lógica da Barra de Pesquisa (A que estava a dar erro)
+        val btnSearch = findViewById<ImageButton>(R.id.btnSearchTrigger)
+        val searchInput = findViewById<EditText>(R.id.searchEditText)
+        val titleLibrary = findViewById<TextView>(R.id.tvLibraryTitle)
+
+        btnSearch.setOnClickListener {
+            if (searchInput.visibility == View.GONE) {
+                searchInput.visibility = View.VISIBLE
+                titleLibrary.visibility = View.GONE
+                btnSearch.setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            } else {
+                searchInput.visibility = View.GONE
+                titleLibrary.visibility = View.VISIBLE
+                btnSearch.setImageResource(android.R.drawable.ic_menu_search)
+                searchInput.text.clear()
+            }
         }
     }
 
@@ -48,7 +69,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermission() {
-        val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
+        val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_AUDIO else Manifest.permission.READ_EXTERNAL_STORAGE
+
         if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(perm), 100)
         } else loadMusic()
@@ -56,7 +79,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadMusic() {
         musicList.clear()
-        val cursor = contentResolver.query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST), "${MediaStore.Audio.Media.IS_MUSIC} != 0", null, null)
+        val cursor = contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST),
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0", null, null)
+
         cursor?.use {
             val idCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleCol = it.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)

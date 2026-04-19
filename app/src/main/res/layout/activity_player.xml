@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dark"
@@ -10,12 +11,14 @@
         android:id="@+id/albumCard"
         android:layout_width="320dp"
         android:layout_height="320dp"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="48dp"
+        app:cardBackgroundColor="@color/surface_dark"
         app:cardCornerRadius="32dp"
-        app:cardElevation="40dp"
+        app:cardElevation="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
+
         <ImageView
             android:id="@+id/albumArt"
             android:layout_width="match_parent"
@@ -31,68 +34,119 @@
         android:layout_marginHorizontal="40dp"
         android:layout_marginTop="40dp"
         android:gravity="center"
+        android:text="Song Title"
         android:textColor="@color/text_primary"
-        android:textSize="28sp"
+        android:textSize="26sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/albumCard" />
 
+    <TextView
+        android:id="@+id/musicArtist"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Artist Name"
+        android:textColor="@color/text_secondary"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/musicTitle" />
+
     <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
+        android:id="@+id/controlsContainer"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="24dp"
         app:cardBackgroundColor="@color/surface_dark"
-        app:cardCornerRadius="40dp"
-        app:cardElevation="15dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:cardCornerRadius="44dp"
+        app:cardElevation="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="28dp">
 
             <SeekBar
                 android:id="@+id/seekBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
                 android:progressTint="@color/accent_purple"
                 android:thumbTint="@color/accent_purple" />
 
-            <LinearLayout
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:gravity="center"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content">
+
+                <ImageButton
+                    android:id="@+id/btnShuffle"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_directions"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/text_secondary" />
 
                 <ImageButton
                     android:id="@+id/btnPrev"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_previous"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/btnPlay"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/btnShuffle"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:tint="@color/text_primary" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btnPlay"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="32dp"
                     android:backgroundTint="@color/accent_purple"
                     app:fabSize="normal"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/btnNext"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/btnPrev"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@android:drawable/ic_media_play"
                     app:tint="@color/white" />
 
                 <ImageButton
                     android:id="@+id/btnNext"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@android:drawable/ic_media_next"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/btnRepeat"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/btnPlay"
+                    app:layout_constraintTop_toTopOf="parent"
                     app:tint="@color/text_primary" />
-            </LinearLayout>
+
+                <ImageButton
+                    android:id="@+id/btnRepeat"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_revert"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/text_secondary" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
