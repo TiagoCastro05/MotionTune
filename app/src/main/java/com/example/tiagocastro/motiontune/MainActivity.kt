@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private var musicList = ArrayList<Music>()
     private var filteredList = ArrayList<Music>()
     private lateinit var recyclerView: RecyclerView
-    private var isAscending = true
+    private var isAscending = true // Controla se a ordem atual é A-Z ou Z-A
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 2. Pesquisa em Tempo Real
+        // 2. Escuta a escrita na pesquisa
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -72,30 +72,14 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // 3. Lógica de Ordenação Profissional (Ignora aspas e símbolos no início)
+        // 3. Botão de Ordenação (A-Z / Z-A)
         btnSort.setOnClickListener {
-            if (isAscending) {
-                // Ordena de A a Z ignorando aspas e espaços
-                filteredList.sortWith(compareBy {
-                    it.title.replace("\"", "").replace("'", "").lowercase().trim()
-                })
-                btnSort.text = "Z-A"
-            } else {
-                // Ordena de Z a A
-                filteredList.sortWith(compareByDescending {
-                    it.title.replace("\"", "").replace("'", "").lowercase().trim()
-                })
-                btnSort.text = "A-Z"
-            }
             isAscending = !isAscending
-
-            // Atualizar o adaptador com a nova ordem
-            recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
-                startPlayer(filteredList, pos)
-            }
+            btnSort.text = if (isAscending) "A-Z" else "Z-A"
+            applySorting() // Aplica a ordem à lista atual
         }
 
-        // 4. Botões de Ação Rápida
+        // 4. Botões de Shuffle e Play
         btnShuffleAll.setOnClickListener {
             if (filteredList.isNotEmpty()) {
                 val randomPos = filteredList.indices.random()
@@ -110,12 +94,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Função que filtra a lista com base na pesquisa
     private fun filterList(query: String) {
         val lowerQuery = query.lowercase().trim()
-
-        // ADICIONA ESTA LINHA PARA RESOLVER O ERRO:
-        val btnSort = findViewById<Button>(R.id.btnSort)
-
         filteredList = if (lowerQuery.isEmpty()) {
             ArrayList(musicList)
         } else {
@@ -124,14 +105,24 @@ class MainActivity : AppCompatActivity() {
                         it.artist.lowercase().contains(lowerQuery)
             })
         }
+        applySorting() // Garante que a lista filtrada mantém a ordem escolhida
+    }
 
-        // O resto do teu código agora vai funcionar:
-        if (!isAscending) {
-            filteredList.sortWith(compareBy { it.title.replace("\"", "").lowercase().trim() })
-        } else if (btnSort.text == "A-Z" && isAscending == false) {
-            filteredList.sortWith(compareByDescending { it.title.replace("\"", "").lowercase().trim() })
+    // FUNÇÃO CRUCIAL: Ordena a lista ignorando aspas e símbolos iniciais
+    private fun applySorting() {
+        if (isAscending) {
+            // Ordem A-Z: Remove aspas e espaços apenas para comparar
+            filteredList.sortWith(compareBy {
+                it.title.replace("\"", "").replace("'", "").lowercase().trim()
+            })
+        } else {
+            // Ordem Z-A
+            filteredList.sortWith(compareByDescending {
+                it.title.replace("\"", "").replace("'", "").lowercase().trim()
+            })
         }
 
+        // Atualiza o adaptador com a lista organizada
         recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
             startPlayer(filteredList, pos)
         }
@@ -169,14 +160,9 @@ class MainActivity : AppCompatActivity() {
                 musicList.add(Music(it.getString(titleCol), it.getString(artistCol), uri.toString()))
             }
         }
-        // Inicializar a lista filtrada com todas as músicas
-        filteredList = ArrayList(musicList)
-        // Ordenação inicial A-Z padrão
-        filteredList.sortWith(compareBy { it.title.replace("\"", "").lowercase().trim() })
 
-        recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
-            startPlayer(filteredList, pos)
-        }
+        filteredList = ArrayList(musicList)
+        applySorting() // Ordenação inicial automática
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
