@@ -21,26 +21,19 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
-    // Listas para gestão de dados
     private var musicList = ArrayList<Music>()
     private var filteredList = ArrayList<Music>()
-
-    // Componentes de UI
     private lateinit var recyclerView: RecyclerView
-    private lateinit var btnSort: Button // Variável global para ser vista por todas as funções
+    private var isAscending = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Inicializar RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Verificar permissões e carregar músicas
         checkPermission()
-
-        // Configurar botões do topo
         setupTopButtons()
     }
 
@@ -48,13 +41,11 @@ class MainActivity : AppCompatActivity() {
         val btnSearch = findViewById<ImageButton>(R.id.btnSearchTrigger)
         val searchInput = findViewById<EditText>(R.id.searchEditText)
         val titleLibrary = findViewById<TextView>(R.id.tvLibraryTitle)
+        val btnSort = findViewById<Button>(R.id.btnSort)
         val btnPlayAll = findViewById<ImageButton>(R.id.btnPlayAll)
         val btnShuffleAll = findViewById<View>(R.id.btnShuffleAll)
 
-        btnSort = findViewById(R.id.btnSort)
-        btnSort.text = "A-Z" // Texto inicial
-
-        // 1. Lógica da Lupa (Abrir/Fechar Pesquisa)
+        // 1. Lógica da Barra de Pesquisa (Lupa)
         btnSearch.setOnClickListener {
             val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             if (searchInput.visibility == View.GONE) {
@@ -69,7 +60,6 @@ class MainActivity : AppCompatActivity() {
                 btnSearch.setImageResource(android.R.drawable.ic_menu_search)
                 searchInput.text.clear()
                 imm.hideSoftInputFromWindow(searchInput.windowToken, 0)
-                filterList("") // Resetar a lista ao fechar
             }
         }
 
@@ -82,44 +72,51 @@ class MainActivity : AppCompatActivity() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // 3. Ordenação A-Z / Z-A (Funciona ao 1º clique)
+        // 3. Lógica de Ordenação Profissional (Ignora aspas e símbolos no início)
         btnSort.setOnClickListener {
-            if (btnSort.text == "A-Z") {
-                // Utilizador quer ordenar A -> Z
-                filteredList.sortBy { it.title.lowercase() }
+            if (isAscending) {
+                // Ordena de A a Z ignorando aspas e espaços
+                filteredList.sortWith(compareBy {
+                    it.title.replace("\"", "").replace("'", "").lowercase().trim()
+                })
                 btnSort.text = "Z-A"
             } else {
-                // Utilizador quer ordenar Z -> A
-                filteredList.sortByDescending { it.title.lowercase() }
+                // Ordena de Z a A
+                filteredList.sortWith(compareByDescending {
+                    it.title.replace("\"", "").replace("'", "").lowercase().trim()
+                })
                 btnSort.text = "A-Z"
             }
-            // Atualizar o adaptador imediatamente
+            isAscending = !isAscending
+
+            // Atualizar o adaptador com a nova ordem
             recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
                 startPlayer(filteredList, pos)
             }
         }
 
-        // 4. Botão Play All (Ícone Play à direita)
+        // 4. Botões de Ação Rápida
+        btnShuffleAll.setOnClickListener {
+            if (filteredList.isNotEmpty()) {
+                val randomPos = filteredList.indices.random()
+                startPlayer(filteredList, randomPos)
+            }
+        }
+
         btnPlayAll.setOnClickListener {
             if (filteredList.isNotEmpty()) {
                 startPlayer(filteredList, 0)
             }
         }
-
-        // 5. Botão Shuffle (Texto à esquerda)
-        btnShuffleAll.setOnClickListener {
-            if (filteredList.isNotEmpty()) {
-                val randomPos = (0 until filteredList.size).random()
-                startPlayer(filteredList, randomPos)
-            }
-        }
     }
 
     private fun filterList(query: String) {
-        val lowerQuery = query.lowercase()
+        val lowerQuery = query.lowercase().trim()
 
-        // Filtrar a partir da lista original de músicas carregadas
-        filteredList = if (query.isEmpty()) {
+        // ADICIONA ESTA LINHA PARA RESOLVER O ERRO:
+        val btnSort = findViewById<Button>(R.id.btnSort)
+
+        filteredList = if (lowerQuery.isEmpty()) {
             ArrayList(musicList)
         } else {
             ArrayList(musicList.filter {
@@ -128,14 +125,13 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        // Aplicar a ordenação que está ativa no momento da pesquisa
-        if (btnSort.text == "Z-A") {
-            filteredList.sortBy { it.title.lowercase() }
-        } else {
-            filteredList.sortByDescending { it.title.lowercase() }
+        // O resto do teu código agora vai funcionar:
+        if (!isAscending) {
+            filteredList.sortWith(compareBy { it.title.replace("\"", "").lowercase().trim() })
+        } else if (btnSort.text == "A-Z" && isAscending == false) {
+            filteredList.sortWith(compareByDescending { it.title.replace("\"", "").lowercase().trim() })
         }
 
-        // Atualizar o RecyclerView com os resultados filtrados
         recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
             startPlayer(filteredList, pos)
         }
@@ -154,9 +150,7 @@ class MainActivity : AppCompatActivity() {
 
         if (ContextCompat.checkSelfPermission(this, perm) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(perm), 100)
-        } else {
-            loadMusic()
-        }
+        } else loadMusic()
     }
 
     private fun loadMusic() {
@@ -175,10 +169,10 @@ class MainActivity : AppCompatActivity() {
                 musicList.add(Music(it.getString(titleCol), it.getString(artistCol), uri.toString()))
             }
         }
-
-        // Sincronizar as listas e ordenar inicialmente A-Z
+        // Inicializar a lista filtrada com todas as músicas
         filteredList = ArrayList(musicList)
-        filteredList.sortBy { it.title.lowercase() }
+        // Ordenação inicial A-Z padrão
+        filteredList.sortWith(compareBy { it.title.replace("\"", "").lowercase().trim() })
 
         recyclerView.adapter = MusicAdapter(filteredList) { _, pos ->
             startPlayer(filteredList, pos)
@@ -187,10 +181,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            loadMusic()
-        } else {
-            Toast.makeText(this, "Permissão negada", Toast.LENGTH_SHORT).show()
-        }
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) loadMusic()
     }
 }
