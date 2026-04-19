@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="bg_dark">#0A0A0B</color>
+    <color name="surface_dark">#161618</color>
+
+    <color name="accent_purple">#FF00FF</color>
     <color name="main_purple">#FF00FF</color>
     <color name="prototipo_purple">#FF00FF</color>
+
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="gray_text">#B0FFFFFF</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#8E8E93</color>
 </resources>
