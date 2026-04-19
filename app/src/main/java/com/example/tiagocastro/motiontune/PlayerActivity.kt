@@ -193,11 +193,22 @@ class PlayerActivity : AppCompatActivity(), SensorEventListener {
 
     private fun changeTrack(next: Boolean) {
         isReadyToChange = false
-        if (next && player?.hasNextMediaItem() == true) player?.seekToNext()
-        else if (!next && player?.hasPreviousMediaItem() == true) player?.seekToPrevious()
+        if (next && player?.hasNextMediaItem() == true) {
+            player?.seekToNext()
+        } else if (!next && player?.hasPreviousMediaItem() == true) {
+            player?.seekToPrevious()
+        }
 
-        val anim = if (next) android.R.anim.slide_in_left else android.R.anim.slide_out_right
-        albumCard.startAnimation(AnimationUtils.loadAnimation(this, anim))
+        // INVERTIDO:
+        // Agora o "Next" desliza para a direita (slide_out_right)
+        // E o "Prev" desliza para a esquerda (slide_in_left)
+        val animRes = if (next) {
+            android.R.anim.slide_out_right
+        } else {
+            android.R.anim.slide_in_left
+        }
+
+        albumCard.startAnimation(AnimationUtils.loadAnimation(this, animRes))
     }
 
     override fun onSensorChanged(event: SensorEvent) {
