@@ -25,5 +25,7 @@ O MotionTune foi desenhado para proporcionar uma forma intuitiva de interação.
 2. Abre a pasta do projeto no **Android Studio**.
 3. Deixa o Gradle sincronizar todas as dependências.
 4. Conecta o teu dispositivo Android via USB (com o modo *Developer / USB Debugging* ativado).
-5. Compila e instala a aplicação no dispositivo. 
+5. Compila e instala a aplicação no dispositivo.
+
+
 *Nota: É estritamente recomendado testar num telemóvel físico real para garantir o correto funcionamento do acelerómetro, uma vez que emuladores não simulam movimento físico com facilidade e já ter ficheiros .mp3 já instalados no telemóvel.*
