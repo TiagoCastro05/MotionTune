@@ -1,13 +1,13 @@
 # 🎵 MotionTune
 
-Um player de música para dispositivos móveis focado numa experiência *hands-free*, que utiliza os sensores de movimento (acelerómetro) do telemóvel para controlar a reprodução das faixas.
+Um player de música para dispositivos móveis que utiliza os sensores de movimento do telemóvel para controlar a reprodução das faixas de musica.
 
 ## 📱 Sobre o Projeto
 O MotionTune foi desenhado para proporcionar uma forma intuitiva de interação. Em vez de utilizar os botões tradicionais no ecrã táctil, o utilizador pode controlar a sua música com gestos físicos através do dispositivo móvel. É ideal para quando não se pode olhar diretamente para o ecrã.
 
 ## 🛠️ Tecnologias Utilizadas
-- **Linguagem:** Java / C# *(Ajusta consoante o que usaste, ex: Java para Android nativo)*
-- **Framework:** *(Ajusta para Android Studio / Unity / Xamarin)*
+- **Linguagem:** Java
+- **Framework:** Android Studio
 - **Sensores API:** Acesso ao Acelerómetro do dispositivo.
 
 ## ✨ Funcionalidades (Controlos por Movimento)
